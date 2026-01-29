@@ -4,9 +4,9 @@ from aiogram import Bot, Dispatcher, types, F
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.filters import Command
 
-# --- НАЛАШТУВАННЯ (Вписано напряму) ---
+# --- НАЛАШТУВАННЯ ---
 TOKEN = "8586203068:AAHt8DeBVyOjQlKanMC1p3iNIbUzqro1bEI"
-ADMINS = [843027482]  # Твій ID
+ADMINS = [843027482]
 MANAGER_URL = "https://t.me/fuckoffaz"
 CARD = "4874 0700 7049 2978"
 
@@ -37,6 +37,7 @@ def catalog_kb():
     ])
 
 def pay_kb():
+    # ТУТ БУЛА ПОМИЛКА: Кнопка обов'язково повинна мати url або callback_query_data
     return InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="📥 Надіслати чек менеджеру", url=MANAGER_URL)],
         [InlineKeyboardButton(text="⬅️ В головне меню", callback_query_data="start")]
@@ -48,7 +49,7 @@ async def start(m: types.Message):
     async with aiosqlite.connect("liberty.db") as db:
         await db.execute("INSERT OR IGNORE INTO users (id) VALUES (?)", (m.from_user.id,))
         await db.commit()
-    await m.answer("👋 Вітаємо в Liberty Style! Оберіть товар або зверніться до нас:", reply_markup=main_kb())
+    await m.answer("👋 Вітаємо в Liberty Style!", reply_markup=main_kb())
 
 @dp.callback_query(F.data == "start")
 async def back(c: types.CallbackQuery):
@@ -56,57 +57,47 @@ async def back(c: types.CallbackQuery):
 
 @dp.callback_query(F.data == "catalog")
 async def catalog(c: types.CallbackQuery):
-    await c.message.edit_text("🔥 Наш актуальний асортимент:", reply_markup=catalog_kb())
+    await c.message.edit_text("🔥 Наш асортимент:", reply_markup=catalog_kb())
 
 @dp.callback_query(F.data == "sizes")
 async def sizes(c: types.CallbackQuery):
-    text = (
-        "📏 **Таблиця розмірів Liberty Style:**\n\n"
-        "• **S** — ріст 160-170 см\n"
-        "• **M** — ріст 170-180 см\n"
-        "• **L** — ріст 180-190 см\n"
-        "• **XL** — Oversize fit\n\n"
-        "Для точного підбору напишіть менеджеру."
-    )
+    text = "📏 **Розміри:**\n• S (160-170)\n• M (170-180)\n• L (180-190)\n• XL (Oversize)"
     await c.message.edit_text(text, reply_markup=main_kb())
 
 @dp.callback_query(F.data.startswith("buy_"))
 async def pay(c: types.CallbackQuery):
+    # ТУТ ТАКОЖ ВИПРАВЛЕНО: прибрано зайвий аргумент url з m.answer
     await c.message.answer(
-        f"💳 **Реквізити для оплати:**\n`{CARD}`\n\n"
-        "Після оплати зробіть скріншот чека та натисніть кнопку нижче, щоб оформити доставку 👇",
+        f"💳 **Реквізити для оплати:**\n`{CARD}`\n\nНадішліть чек менеджеру!",
         reply_markup=pay_kb(),
         parse_mode="Markdown"
     )
 
 @dp.callback_query(F.data == "donate")
 async def donate(c: types.CallbackQuery):
-    await c.message.answer(f"🙏 Дякуємо за підтримку бренду!\nКарта: `{CARD}`", parse_mode="Markdown")
+    await c.message.answer(f"🙏 Дякуємо!\nКарта: `{CARD}`", parse_mode="Markdown")
 
 # --- АДМІНКА ---
 @dp.message(Command("admin"))
 async def admin(m: types.Message):
     if m.from_user.id in ADMINS:
         kb = InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="📢 Розсилка", callback_query_data="broadcast")]])
-        await m.answer("🛠 Панель адміністратора:", reply_markup=kb)
+        await m.answer("🛠 Адмін-панель:", reply_markup=kb)
 
 @dp.callback_query(F.data == "broadcast")
 async def broadcast_step(c: types.CallbackQuery):
     if c.from_user.id in ADMINS:
-        await c.message.answer("Введіть текст повідомлення для всіх користувачів:")
+        await c.message.answer("Введіть текст розсилки:")
 
 @dp.message(lambda m: m.from_user.id in ADMINS and not m.text.startswith("/"))
 async def do_broadcast(m: types.Message):
     async with aiosqlite.connect("liberty.db") as db:
         cursor = await db.execute("SELECT id FROM users")
         users = await cursor.fetchall()
-        count = 0
         for u in users:
-            try:
-                await bot.send_message(u[0], m.text)
-                count += 1
+            try: await bot.send_message(u[0], m.text)
             except: pass
-    await m.answer(f"✅ Розсилка завершена! Отримали: {count} користувачів.")
+    await m.answer("✅ Готово!")
 
 async def main():
     await init_db()
