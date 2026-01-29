@@ -5,8 +5,8 @@ from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.filters import Command
 
 # --- НАЛАШТУВАННЯ ---
-TOKEN = "ТВІЙ_ТОКЕН"
-ADMINS = [123456789, 987654321]  # Додай сюди ID всіх адмінів через кому
+TOKEN = "8586203068:AAHt8DeBVyOjQlKanMC1p3iNIbUzqro1bEI"
+ADMINS = [843027482]  # Додай сюди ID всіх адмінів через кому
 MANAGER_URL = "https://t.me/fuckoffaz"
 CARD = "4874 0700 7049 2978"
 
@@ -98,4 +98,5 @@ async def main():
     await dp.start_polling(bot)
 
 if __name__ == "__main__":
+
     asyncio.run(main())
