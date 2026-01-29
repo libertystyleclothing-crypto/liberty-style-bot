@@ -1,16 +1,12 @@
-import os
 import asyncio
 import aiosqlite
 from aiogram import Bot, Dispatcher, types, F
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.filters import Command
 
-# Railway бере ці дані з розділу Variables
-# Встанови в Railway змінні BOT_TOKEN та ADMIN_IDS
-TOKEN = os.getenv("8586203068:AAHt8DeBVyOjQlKanMC1p3iNIbUzqro1bEI")
-ADMINS_STR = os.getenv("843027482", "")
-ADMINS = [int(i.strip()) for i in ADMINS_STR.split(",") if i.strip()]
-
+# --- НАЛАШТУВАННЯ (Вписано напряму) ---
+TOKEN = "8586203068:AAHt8DeBVyOjQlKanMC1p3iNIbUzqro1bEI"
+ADMINS = [843027482]  # Твій ID
 MANAGER_URL = "https://t.me/fuckoffaz"
 CARD = "4874 0700 7049 2978"
 
@@ -52,7 +48,7 @@ async def start(m: types.Message):
     async with aiosqlite.connect("liberty.db") as db:
         await db.execute("INSERT OR IGNORE INTO users (id) VALUES (?)", (m.from_user.id,))
         await db.commit()
-    await m.answer("👋 Вітаємо в Liberty Style!", reply_markup=main_kb())
+    await m.answer("👋 Вітаємо в Liberty Style! Оберіть товар або зверніться до нас:", reply_markup=main_kb())
 
 @dp.callback_query(F.data == "start")
 async def back(c: types.CallbackQuery):
@@ -69,7 +65,8 @@ async def sizes(c: types.CallbackQuery):
         "• **S** — ріст 160-170 см\n"
         "• **M** — ріст 170-180 см\n"
         "• **L** — ріст 180-190 см\n"
-        "• **XL** — Oversize fit"
+        "• **XL** — Oversize fit\n\n"
+        "Для точного підбору напишіть менеджеру."
     )
     await c.message.edit_text(text, reply_markup=main_kb())
 
@@ -77,14 +74,14 @@ async def sizes(c: types.CallbackQuery):
 async def pay(c: types.CallbackQuery):
     await c.message.answer(
         f"💳 **Реквізити для оплати:**\n`{CARD}`\n\n"
-        "Надішліть чек менеджеру для оформлення замовлення 👇",
+        "Після оплати зробіть скріншот чека та натисніть кнопку нижче, щоб оформити доставку 👇",
         reply_markup=pay_kb(),
         parse_mode="Markdown"
     )
 
 @dp.callback_query(F.data == "donate")
 async def donate(c: types.CallbackQuery):
-    await c.message.answer(f"🙏 Дякуємо за підтримку!\nКарта: `{CARD}`", parse_mode="Markdown")
+    await c.message.answer(f"🙏 Дякуємо за підтримку бренду!\nКарта: `{CARD}`", parse_mode="Markdown")
 
 # --- АДМІНКА ---
 @dp.message(Command("admin"))
@@ -96,7 +93,7 @@ async def admin(m: types.Message):
 @dp.callback_query(F.data == "broadcast")
 async def broadcast_step(c: types.CallbackQuery):
     if c.from_user.id in ADMINS:
-        await c.message.answer("Введіть текст розсилки:")
+        await c.message.answer("Введіть текст повідомлення для всіх користувачів:")
 
 @dp.message(lambda m: m.from_user.id in ADMINS and not m.text.startswith("/"))
 async def do_broadcast(m: types.Message):
@@ -109,7 +106,7 @@ async def do_broadcast(m: types.Message):
                 await bot.send_message(u[0], m.text)
                 count += 1
             except: pass
-    await m.answer(f"✅ Розсилка завершена! Відправлено: {count}")
+    await m.answer(f"✅ Розсилка завершена! Отримали: {count} користувачів.")
 
 async def main():
     await init_db()
