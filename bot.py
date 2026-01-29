@@ -1,12 +1,16 @@
+import os
 import asyncio
 import aiosqlite
 from aiogram import Bot, Dispatcher, types, F
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.filters import Command
 
-# --- НАЛАШТУВАННЯ ---
-TOKEN = "8586203068:AAHt8DeBVyOjQlKanMC1p3iNIbUzqro1bEI"
-ADMINS = [843027482]  # Додай сюди ID всіх адмінів через кому
+# Railway бере ці дані з розділу Variables
+TOKEN = os.getenv("BOT_TOKEN")
+# Перетворюємо рядок "ID1,ID2" у список чисел
+ADMINS_STR = os.getenv("ADMIN_IDS", "")
+ADMINS = [int(i.strip()) for i in ADMINS_STR.split(",") if i.strip()]
+
 MANAGER_URL = "https://t.me/fuckoffaz"
 CARD = "4874 0700 7049 2978"
 
@@ -36,12 +40,6 @@ def catalog_kb():
         [InlineKeyboardButton(text="⬅️ Назад", callback_query_data="start")]
     ])
 
-def pay_kb():
-    return InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="📥 Надіслати чек менеджеру", url=MANAGER_URL)],
-        [InlineKeyboardButton(text="⬅️ В головне меню", callback_query_data="start")]
-    ])
-
 # --- ОБРОБНИКИ ---
 @dp.message(Command("start"))
 async def start(m: types.Message):
@@ -56,7 +54,7 @@ async def back(c: types.CallbackQuery):
 
 @dp.callback_query(F.data == "catalog")
 async def catalog(c: types.CallbackQuery):
-    await c.message.edit_text("🔥 Наш актуальний асортимент:", reply_markup=catalog_kb())
+    await c.message.edit_text("🔥 Наш асортимент:", reply_markup=catalog_kb())
 
 @dp.callback_query(F.data == "sizes")
 async def sizes(c: types.CallbackQuery):
@@ -65,11 +63,7 @@ async def sizes(c: types.CallbackQuery):
 
 @dp.callback_query(F.data.startswith("buy_"))
 async def pay(c: types.CallbackQuery):
-    await c.message.answer(f"💳 Карта: `{CARD}`\nНадішліть чек менеджеру!", reply_markup=pay_kb(), parse_mode="Markdown")
-
-@dp.callback_query(F.data == "donate")
-async def donate(c: types.CallbackQuery):
-    await c.message.answer(f"🙏 Карта автора: `{CARD}`", parse_mode="Markdown")
+    await c.message.answer(f"💳 Карта: `{CARD}`\nНадішліть чек менеджеру!", url=MANAGER_URL, parse_mode="Markdown")
 
 # --- АДМІНКА ---
 @dp.message(Command("admin"))
@@ -91,12 +85,11 @@ async def do_broadcast(m: types.Message):
         for u in users:
             try: await bot.send_message(u[0], m.text)
             except: pass
-    await m.answer("✅ Готово!")
+    await m.answer("✅ Розсилка завершена!")
 
 async def main():
     await init_db()
     await dp.start_polling(bot)
 
 if __name__ == "__main__":
-
     asyncio.run(main())
