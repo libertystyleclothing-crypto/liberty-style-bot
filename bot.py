@@ -6,9 +6,9 @@ from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.filters import Command
 
 # Railway бере ці дані з розділу Variables
-TOKEN = os.getenv("BOT_TOKEN")
+TOKEN = os.getenv("8586203068:AAHt8DeBVyOjQlKanMC1p3iNIbUzqro1bEI")
 # Перетворюємо рядок "ID1,ID2" у список чисел
-ADMINS_STR = os.getenv("ADMIN_IDS", "")
+ADMINS_STR = os.getenv("843027482")
 ADMINS = [int(i.strip()) for i in ADMINS_STR.split(",") if i.strip()]
 
 MANAGER_URL = "https://t.me/fuckoffaz"
@@ -93,3 +93,4 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
+
