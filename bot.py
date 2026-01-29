@@ -6,9 +6,9 @@ from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.filters import Command
 
 # Railway бере ці дані з розділу Variables
+# Встанови в Railway змінні BOT_TOKEN та ADMIN_IDS
 TOKEN = os.getenv("8586203068:AAHt8DeBVyOjQlKanMC1p3iNIbUzqro1bEI")
-# Перетворюємо рядок "ID1,ID2" у список чисел
-ADMINS_STR = os.getenv("843027482")
+ADMINS_STR = os.getenv("843027482", "")
 ADMINS = [int(i.strip()) for i in ADMINS_STR.split(",") if i.strip()]
 
 MANAGER_URL = "https://t.me/fuckoffaz"
@@ -40,6 +40,12 @@ def catalog_kb():
         [InlineKeyboardButton(text="⬅️ Назад", callback_query_data="start")]
     ])
 
+def pay_kb():
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="📥 Надіслати чек менеджеру", url=MANAGER_URL)],
+        [InlineKeyboardButton(text="⬅️ В головне меню", callback_query_data="start")]
+    ])
+
 # --- ОБРОБНИКИ ---
 @dp.message(Command("start"))
 async def start(m: types.Message):
@@ -54,16 +60,31 @@ async def back(c: types.CallbackQuery):
 
 @dp.callback_query(F.data == "catalog")
 async def catalog(c: types.CallbackQuery):
-    await c.message.edit_text("🔥 Наш асортимент:", reply_markup=catalog_kb())
+    await c.message.edit_text("🔥 Наш актуальний асортимент:", reply_markup=catalog_kb())
 
 @dp.callback_query(F.data == "sizes")
 async def sizes(c: types.CallbackQuery):
-    text = "📏 **Розміри:**\n• S (160-170)\n• M (170-180)\n• L (180-190)\n• XL (Oversize)"
+    text = (
+        "📏 **Таблиця розмірів Liberty Style:**\n\n"
+        "• **S** — ріст 160-170 см\n"
+        "• **M** — ріст 170-180 см\n"
+        "• **L** — ріст 180-190 см\n"
+        "• **XL** — Oversize fit"
+    )
     await c.message.edit_text(text, reply_markup=main_kb())
 
 @dp.callback_query(F.data.startswith("buy_"))
 async def pay(c: types.CallbackQuery):
-    await c.message.answer(f"💳 Карта: `{CARD}`\nНадішліть чек менеджеру!", url=MANAGER_URL, parse_mode="Markdown")
+    await c.message.answer(
+        f"💳 **Реквізити для оплати:**\n`{CARD}`\n\n"
+        "Надішліть чек менеджеру для оформлення замовлення 👇",
+        reply_markup=pay_kb(),
+        parse_mode="Markdown"
+    )
+
+@dp.callback_query(F.data == "donate")
+async def donate(c: types.CallbackQuery):
+    await c.message.answer(f"🙏 Дякуємо за підтримку!\nКарта: `{CARD}`", parse_mode="Markdown")
 
 # --- АДМІНКА ---
 @dp.message(Command("admin"))
@@ -82,10 +103,13 @@ async def do_broadcast(m: types.Message):
     async with aiosqlite.connect("liberty.db") as db:
         cursor = await db.execute("SELECT id FROM users")
         users = await cursor.fetchall()
+        count = 0
         for u in users:
-            try: await bot.send_message(u[0], m.text)
+            try:
+                await bot.send_message(u[0], m.text)
+                count += 1
             except: pass
-    await m.answer("✅ Розсилка завершена!")
+    await m.answer(f"✅ Розсилка завершена! Відправлено: {count}")
 
 async def main():
     await init_db()
@@ -93,4 +117,3 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
-
